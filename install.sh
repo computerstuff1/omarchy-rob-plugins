@@ -10,6 +10,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGINS_DIR="$SCRIPT_DIR/plugins"
+BIN_DIR="$SCRIPT_DIR/bin"
 
 C_RESET=$'\033[0m'; C_BOLD=$'\033[1m'
 C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'; C_RED=$'\033[31m'; C_CYAN=$'\033[36m'
@@ -28,6 +29,41 @@ require() {
   if ! command -v "$1" >/dev/null 2>&1; then
     die "Required command '$1' not found. $2"
   fi
+}
+
+prune_backups() {
+  local dst="$1"
+  local dir; dir="$(dirname "$dst")"
+  local name; name="$(basename "$dst")"
+  local newest
+  newest="$(find "$dir" -maxdepth 1 -name "$name.bak.*" -printf '%T@ %p\n' 2>/dev/null | sort -nr | head -n1 | cut -d' ' -f2-)"
+  if [[ -z "$newest" ]]; then
+    return 0
+  fi
+  while IFS= read -r -d '' bak; do
+    if [[ "$bak" != "$newest" ]]; then
+      rm -rf -- "$bak"
+      warn "removed old backup: $(basename "$bak")"
+    fi
+  done < <(find "$dir" -maxdepth 1 -name "$name.bak.*" -print0 2>/dev/null)
+}
+
+install_file() {
+  local src="$1" dst="$2"
+  if [[ ! -f "$src" ]]; then
+    warn "skipping missing source: $src"
+    return 0
+  fi
+  if [[ -e "$dst" ]] && ! cmp -s "$src" "$dst"; then
+    local bak
+    bak="$dst.bak.$(date +%s)"
+    mv "$dst" "$bak"
+    warn "backed up existing file: $dst -> $(basename "$bak")"
+    prune_backups "$dst"
+  fi
+  mkdir -p "$(dirname "$dst")"
+  cp "$src" "$dst"
+  ok "installed $(basename "$dst")"
 }
 
 BUNDLED_PLUGINS=(rob.bar rob.clock rob.menu rob.system-updates rob.vitals rob.workspaces)
@@ -61,6 +97,11 @@ info "installing bundled plugins"
 for plugin in "${BUNDLED_PLUGINS[@]}"; do
   install_dir_overwrite "$PLUGINS_DIR/$plugin" "$HOME/.config/omarchy/plugins/$plugin"
 done
+
+bundle "Bin scripts"
+info "installing system-update-count"
+install_file "$BIN_DIR/system-update-count" "$HOME/.config/omarchy/bin/system-update-count"
+chmod +x "$HOME/.config/omarchy/bin/system-update-count"
 
 bundle "Apply"
 info "restarting shell"

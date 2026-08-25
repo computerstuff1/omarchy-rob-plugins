@@ -34,4 +34,20 @@ place; stale `*.bak.*` plugin dirs from older runs are pruned first.
 1. Checks that `omarchy` is installed.
 2. Prunes stale `*.bak.*` plugin backups.
 3. Copies all six `rob.*` plugins into `~/.config/omarchy/plugins/`.
-4. Restarts the omarchy shell.
+4. Installs the `system-update-count` script into `~/.config/omarchy/bin/`.
+5. Restarts the omarchy shell.
+
+## Repository layout
+
+```
+install.sh
+plugins/          # bundled rob.* plugins
+  rob.bar/        # status bar with widgets and indicators
+  rob.clock/      # date/time label with calendar popup
+  rob.menu/       # command menu launcher
+  rob.system-updates/   # pacman update indicator
+  rob.vitals/     # CPU, memory, and disk widget
+  rob.workspaces/ # workspace indicators
+bin/
+  system-update-count    # counts pending Arch/AUR updates
+```
