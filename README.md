@@ -35,7 +35,9 @@ place; stale `*.bak.*` plugin dirs from older runs are pruned first.
 2. Prunes stale `*.bak.*` plugin backups.
 3. Copies all six `rob.*` plugins into `~/.config/omarchy/plugins/`.
 4. Installs the `system-update-count` script into `~/.config/omarchy/bin/`.
-5. Restarts the omarchy shell.
+5. Enables the rob plugins, disables conflicting omarchy equivalents, and
+   wires them into `shell.json` (backs up the existing file first).
+6. Restarts the omarchy shell.
 
 ## Repository layout
 

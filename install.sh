@@ -103,6 +103,104 @@ info "installing system-update-count"
 install_file "$BIN_DIR/system-update-count" "$HOME/.config/omarchy/bin/system-update-count"
 chmod +x "$HOME/.config/omarchy/bin/system-update-count"
 
+bundle "Configure"
+info "enabling rob plugins"
+omarchy plugin enable rob.bar rob.clock rob.menu rob.system-updates rob.vitals rob.workspaces
+ok "rob plugins enabled"
+
+info "disabling conflicting omarchy plugins"
+omarchy plugin disable omarchy.menu omarchy.clock omarchy.workspaces omarchy.system-update omarchy.bar 2>/dev/null || true
+ok "conflicting plugins disabled"
+
+info "wiring plugins into shell.json"
+python3 <<'PYEOF'
+import json, os, sys, time
+
+path = os.path.expanduser("~/.config/omarchy/shell.json")
+
+try:
+    with open(path) as f:
+        config = json.load(f)
+except (FileNotFoundError, json.JSONDecodeError):
+    config = {"version": 1}
+
+if isinstance(config, dict):
+    backup = path + ".bak." + str(int(time.time()))
+    try:
+        with open(path) as f:
+            shutil_copy_source = f.read()
+    except Exception:
+        pass
+    else:
+        with open(backup, "w") as f:
+            f.write(shutil_copy_source)
+
+    if "bar" not in config:
+        config["bar"] = {}
+    bar = config["bar"]
+    bar["id"] = "rob.bar"
+    bar["centerAnchor"] = "rob.clock"
+
+    if "layout" not in bar:
+        bar["layout"] = {"left": [], "center": [], "right": []}
+    layout = bar["layout"]
+    for section in ("left", "center", "right"):
+        if section not in layout:
+            layout[section] = []
+
+    ID_SWAP = {
+        "omarchy.menu": "rob.menu",
+        "omarchy.clock": "rob.clock",
+        "omarchy.workspaces": "rob.workspaces",
+        "omarchy.system-update": "rob.system-updates",
+    }
+
+    def swap_id(entry):
+        if isinstance(entry, dict) and "id" in entry:
+            if entry["id"] in ID_SWAP:
+                entry["id"] = ID_SWAP[entry["id"]]
+        elif isinstance(entry, str) and entry in ID_SWAP:
+            entry = ID_SWAP[entry]
+            if isinstance(entry, dict):
+                pass
+        return entry
+
+    def get_entry(entries, target_id):
+        for i, e in enumerate(entries):
+            uid = e["id"] if isinstance(e, dict) else e if isinstance(e, str) else ""
+            if uid == target_id:
+                return i, e
+        return None, None
+
+    for section in ("left", "center", "right"):
+        layout[section] = [swap_id(e) for e in layout[section]]
+
+    # rob.system-updates belongs in right, next to rob.vitals.
+    # Pull it out of wherever the swap left it, then place it.
+    rob_updates = None
+    for section in ("left", "center", "right"):
+        idx, entry = get_entry(layout[section], "rob.system-updates")
+        if entry is not None:
+            rob_updates = entry
+            layout[section].pop(idx)
+            break
+    if rob_updates is None:
+        rob_updates = {"id": "rob.system-updates"}
+
+    # rob.vitals and rob.system-updates together at the head of right
+    layout["right"].insert(0, {"id": "rob.vitals"})
+    layout["right"].insert(1, rob_updates)
+
+    with open(path, "w") as f:
+        json.dump(config, f, indent=2)
+        f.write("\n")
+
+    print("shell.json updated")
+else:
+    print("shell.json is not a valid object, skipping")
+PYEOF
+ok "shell.json updated"
+
 bundle "Apply"
 info "restarting shell"
 omarchy restart shell || warn "omarchy restart shell failed"
