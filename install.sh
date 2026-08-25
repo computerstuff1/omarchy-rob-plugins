@@ -66,7 +66,7 @@ install_file() {
   ok "installed $(basename "$dst")"
 }
 
-BUNDLED_PLUGINS=(rob.bar rob.clock rob.menu rob.system-updates rob.vitals rob.workspaces)
+BUNDLED_PLUGINS=(rob.bar rob.menu rob.system-updates rob.vitals rob.workspaces)
 
 install_dir_overwrite() {
   local src="$1" dst="$2"
@@ -105,11 +105,11 @@ chmod +x "$HOME/.config/omarchy/bin/system-update-count"
 
 bundle "Configure"
 info "enabling rob plugins"
-omarchy plugin enable rob.bar rob.clock rob.menu rob.system-updates rob.vitals rob.workspaces
+omarchy plugin enable rob.bar rob.menu rob.system-updates rob.vitals rob.workspaces
 ok "rob plugins enabled"
 
 info "disabling conflicting omarchy plugins"
-omarchy plugin disable omarchy.menu omarchy.clock omarchy.workspaces omarchy.system-update omarchy.bar 2>/dev/null || true
+omarchy plugin disable omarchy.menu omarchy.workspaces omarchy.system-update omarchy.bar 2>/dev/null || true
 ok "conflicting plugins disabled"
 
 info "wiring plugins into shell.json"
@@ -150,7 +150,6 @@ if isinstance(config, dict):
 
     ID_SWAP = {
         "omarchy.menu": "rob.menu",
-        "omarchy.clock": "rob.clock",
         "omarchy.workspaces": "rob.workspaces",
         "omarchy.system-update": "rob.system-updates",
     }
