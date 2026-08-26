@@ -23,7 +23,7 @@ command.
 ```bash
 git clone https://github.com/computerstuff1/omarchy-rob-plugins.git
 cd omarchy-rob-plugins
-./install.sh
+./install.sh   DON'T USE
 ```
 
 The script is idempotent — re-running it is safe. Plugins are overwritten in
